@@ -21,10 +21,10 @@ export function initialize(passport) {
                 let user = await findUserByGithubId(profile.id);
 
                 if(!user) {
-                    user = await createUser({
-                        githubId: profile.id,
-                        username: profile.username
-                    });
+                    user = await createUser(
+                        profile.id,
+                        profile.username || profile.login || `github_user_${profile.id}`
+                    );
                 }
 
                 return done(null, user);
@@ -39,15 +39,15 @@ export function initialize(passport) {
     
     // After successful login, Passport saves user info to the session.
     // We only store the user.id to keep the session lightweight.
-    passport.serializeUser((user, done) => done(null, user.id));
+    passport.serializeUser((user, done) => done(null, user.github_id));
 
     // Deserialize User
     
     // For every request after login, Passport retrieves user.id from the session,then fetches the full user details from the database.
     // The result is attached to req.user in all routes.
-    passport.deserializeUser(async (id, done) => {
+    passport.deserializeUser(async (githubId, done) => {
         try {
-            const user = await findUserByGithubId(id);
+            const user = await findUserByGithubId(githubId);
             done(null, user);
         } catch (err) {
             done(err);
